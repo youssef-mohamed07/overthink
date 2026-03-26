@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'dart:ui';
 import '../providers/analysis_provider.dart';
 import '../providers/analysis_state.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -159,15 +158,16 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen>
           const SizedBox(height: 32),
           ...state.interpretations.entries.map((e) {
             final isWorst = e.key.toLowerCase().contains('worst');
+            final isRoast = e.key.toLowerCase().contains('roast');
             return Padding(
               padding: const EdgeInsets.only(bottom: 20),
               child: _buildInsightCard(
                 title: e.key.toUpperCase(),
                 content: e.value,
-                icon: isWorst ? Icons.warning_rounded : Icons.psychology_rounded,
-                color: isWorst ? AppColors.tertiary : AppColors.primary, // Tertiary is reddish
+                icon: (isWorst || isRoast) ? Icons.local_fire_department_rounded : Icons.psychology_rounded,
+                color: (isWorst || isRoast) ? AppColors.tertiary : AppColors.primary,
                 theme: theme,
-                isHighlight: isWorst,
+                isHighlight: isWorst || isRoast,
               ),
             );
           }),

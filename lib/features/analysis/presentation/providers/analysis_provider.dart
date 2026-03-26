@@ -17,7 +17,8 @@ class AnalysisNotifier extends Notifier<AnalysisState> {
         'Worst': 'They are definitely ghosting you. They found someone better.',
         'Funny': 'They dropped their phone in a puddle and pigeons stole it.',
         'Realistic': 'They are likely busy at work and will reply later.',
-        'Calm': 'Take a deep breath. A delayed response is normal and not a reflection of your worth.'
+        'Calm': 'Take a deep breath. A delayed response is normal and not a reflection of your worth.',
+        'Roast Me': 'Relax, detective. You built a full conspiracy from a two-word text. Maybe they are just living life, not writing a Netflix script with you.'
       });
     } catch (e) {
       state = AnalysisError('Failed to analyze the message: \$e');

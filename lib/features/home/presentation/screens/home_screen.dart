@@ -39,6 +39,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       {'label': loc.get('funny'), 'color': const Color(0xFFFF9800)},
       {'label': loc.get('realistic'), 'color': const Color(0xFF00D9FF)},
       {'label': loc.get('calm'), 'color': const Color(0xFF4CAF50)},
+      {'label': loc.get('roast_me'), 'color': const Color(0xFFFF5252)},
     ];
 
     return Scaffold(
