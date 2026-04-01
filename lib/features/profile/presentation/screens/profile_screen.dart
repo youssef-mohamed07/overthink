@@ -1,9 +1,11 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/providers/settings_provider.dart';
 import '../../../../core/localization/app_localizations.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -11,16 +13,25 @@ class ProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
+    final authState = ref.watch(authProvider);
     final loc = AppLocalizations.of(context);
     final isDark = settings.themeMode == ThemeMode.dark;
     final theme = Theme.of(context);
+    final displayName = authState.fullName ?? 'Overthink User';
+    final userIdentifier = authState.identifier ?? 'user@example.com';
+    final canToggleBiometric =
+        authState.biometricSupported || authState.biometricEnabled;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.only(
-              left: 24.0, right: 24.0, top: 40.0, bottom: 120.0),
+            left: 24.0,
+            right: 24.0,
+            top: 40.0,
+            bottom: 120.0,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -58,7 +69,9 @@ class ProfileScreen extends ConsumerWidget {
                       ),
                       child: Center(
                         child: Text(
-                          'Y',
+                          displayName.isNotEmpty
+                              ? displayName.characters.first.toUpperCase()
+                              : 'U',
                           style: TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.bold,
@@ -72,7 +85,7 @@ class ProfileScreen extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Youssef Mohamed',
+                          displayName,
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
@@ -81,10 +94,12 @@ class ProfileScreen extends ConsumerWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'youssef@example.com',
+                          userIdentifier,
                           style: TextStyle(
                             fontSize: 14,
-                            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.6,
+                            ),
                           ),
                         ),
                       ],
@@ -107,7 +122,9 @@ class ProfileScreen extends ConsumerWidget {
 
               // Theme Toggle
               _SettingTile(
-                icon: isDark ? Icons.dark_mode_outlined : Icons.light_mode_outlined,
+                icon: isDark
+                    ? Icons.dark_mode_outlined
+                    : Icons.light_mode_outlined,
                 title: loc.get('theme'),
                 subtitle: isDark ? loc.get('dark_mode') : loc.get('light_mode'),
                 theme: theme,
@@ -130,9 +147,55 @@ class ProfileScreen extends ConsumerWidget {
                 trailing: CupertinoSwitch(
                   value: settings.locale.languageCode == 'ar',
                   onChanged: (value) {
-                    final newLocale = value ? const Locale('ar') : const Locale('en');
+                    final newLocale = value
+                        ? const Locale('ar')
+                        : const Locale('en');
                     ref.read(settingsProvider.notifier).setLocale(newLocale);
                   },
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              _SettingTile(
+                icon: Icons.fingerprint_rounded,
+                title: loc.get('auth_biometric_setting'),
+                subtitle: !authState.biometricSupported
+                    ? loc.get('auth_biometric_unavailable')
+                    : authState.biometricEnabled
+                    ? loc.get('auth_biometric_enabled')
+                    : loc.get('auth_biometric_disabled'),
+                theme: theme,
+                trailing: CupertinoSwitch(
+                  value: authState.biometricEnabled,
+                  onChanged: canToggleBiometric
+                      ? (value) async {
+                          final ok = await ref
+                              .read(authProvider.notifier)
+                              .setBiometricEnabled(
+                                value,
+                                reason: loc.get('auth_biometric_enable_reason'),
+                              );
+
+                          if (!context.mounted) {
+                            return;
+                          }
+
+                          final updatedState = ref.read(authProvider);
+                          final errorKey = updatedState.errorMessage;
+                          final message = ok
+                              ? value
+                                    ? loc.get('auth_biometric_enable_success')
+                                    : loc.get('auth_biometric_disable_success')
+                              : (errorKey != null
+                                    ? loc.get(errorKey)
+                                    : loc.get('auth_generic_error'));
+
+                          ScaffoldMessenger.of(
+                            context,
+                          ).showSnackBar(SnackBar(content: Text(message)));
+                        }
+                      : null,
                 ),
               ),
 
@@ -154,9 +217,9 @@ class ProfileScreen extends ConsumerWidget {
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: isDark 
-                      ? [const Color(0xFF2C2C2C), const Color(0xFF1A1A1A)]
-                      : [const Color(0xFFE0E0E0), const Color(0xFFF5F5F5)],
+                    colors: isDark
+                        ? [const Color(0xFF2C2C2C), const Color(0xFF1A1A1A)]
+                        : [const Color(0xFFE0E0E0), const Color(0xFFF5F5F5)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -198,7 +261,9 @@ class ProfileScreen extends ConsumerWidget {
                             'Active until Oct 2024',
                             style: TextStyle(
                               fontSize: 14,
-                              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                              color: theme.colorScheme.onSurface.withValues(
+                                alpha: 0.6,
+                              ),
                             ),
                           ),
                         ],
@@ -208,7 +273,10 @@ class ProfileScreen extends ConsumerWidget {
                       onPressed: () {},
                       style: TextButton.styleFrom(
                         foregroundColor: AppColors.secondary,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
                       ),
                       child: const Text('Manage'),
                     ),
@@ -221,8 +289,19 @@ class ProfileScreen extends ConsumerWidget {
               // Logout Button
               Center(
                 child: TextButton.icon(
-                  onPressed: () {},
-                  icon: const Icon(Icons.logout_rounded, color: Colors.redAccent),
+                  onPressed: () async {
+                    await ref.read(authProvider.notifier).logout();
+
+                    if (!context.mounted) {
+                      return;
+                    }
+
+                    context.go('/auth/request-otp');
+                  },
+                  icon: const Icon(
+                    Icons.logout_rounded,
+                    color: Colors.redAccent,
+                  ),
                   label: Text(
                     loc.get('logout'),
                     style: const TextStyle(
@@ -232,7 +311,10 @@ class ProfileScreen extends ConsumerWidget {
                     ),
                   ),
                   style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 16,
+                    ),
                     backgroundColor: Colors.redAccent.withValues(alpha: 0.1),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
